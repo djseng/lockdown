@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "io.github.djseng.lockdown",
+  "name": "LockDown",
+  "version": "0.3.0",
+  "author": "David Seng",
+  "description": "Holds Omarchy's layout-editing gestures behind one switch: the bar is mounted rather than copied, its workspaces widget does not cycle layouts while locked, and the window-resize keys only exist inside the unlock submap.",
+  "kinds": ["bar", "bar-widget"],
+  "entryPoints": {
+    "bar": "Bar.qml",
+    "barWidget": "Workspaces.qml"
+  },
+  "barWidget": {
+    "displayName": "Workspaces (LockDown)",
+    "description": "Workspace indicators; the active workspace's layout only cycles when unlocked",
+    "category": "Compositor",
+    "allowMultiple": true
+  }
+}

@@ -1,0 +1,4 @@
+# Builds from Omarchy's bar: see tools/build-bar.py
+*.bak
+.hyprland.lua.bak*
+__pycache__/

@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+# LockDown -- one switch for Omarchy's layout-editing gestures.
+#
+#   lockdown            toggle (what the keybinding calls)
+#   lockdown unlock     allow: bar drag/move, widget reorder, layout click, resize keys
+#   lockdown lock       hold them still (the default, and what a session starts in)
+#   lockdown status     print "locked" or "unlocked"
+#
+# The lock is a plain file, and it is the same file Omarchy's own proposed
+# config-lock guards watch (omacom/omarchy#18082):
+#
+#   ~/.local/state/omarchy/toggles/config-lock      present = locked
+#
+# so `omarchy toggle config-lock on|off` drives it too, and the companion
+# config-lock bar widget agrees with it. Unlocking also enters the Hyprland
+# "customize" submap from hypr/lockdown.lua, which is the only place the
+# window-resize keys exist.
+
+set -uo pipefail
+
+state_dir="${XDG_STATE_HOME:-$HOME/.local/state}/omarchy"
+flag="$state_dir/toggles/config-lock"
+
+notify() {
+  if command -v omarchy-notification-send >/dev/null 2>&1; then
+    omarchy-notification-send "${1}" "${2}" >/dev/null 2>&1 || true
+  elif command -v notify-send >/dev/null 2>&1; then
+    notify-send -a LockDown "${1}" "${2}" >/dev/null 2>&1 || true
+  fi
+}
+
+dispatch_submap() {
+  local name="$1"
+  command -v hyprctl >/dev/null 2>&1 || return 0
+  # Hyprland takes a Lua expression here on 0.56; older releases take the plain
+  # dispatcher form. Try the current one, fall back to the legacy spelling.
+  if hyprctl dispatch "hl.dsp.submap(\"$name\")" >/dev/null 2>&1; then
+    return 0
+  fi
+  hyprctl dispatch submap "$name" >/dev/null 2>&1 || true
+}
+
+lock() {
+  mkdir -p "$state_dir/toggles"
+  : >"$flag"
+  dispatch_submap reset
+  notify "Layout locked" "Bar drags, widget reorder and the resize keys are off."
+}
+
+unlock() {
+  rm -f "$flag"
+  dispatch_submap customize
+  notify "Layout unlocked" "Bar drags, widget reorder and the resize keys work again."
+}
+
+case "${1:-toggle}" in
+unlock | off)
+  # "off" because the flag names the lock: `omarchy toggle config-lock off`.
+  unlock
+  ;;
+lock | on)
+  lock
+  ;;
+toggle)
+  if [[ -f $flag ]]; then unlock; else lock; fi
+  ;;
+status)
+  if [[ -f $flag ]]; then echo locked; else echo unlocked; fi
+  ;;
+*)
+  echo "usage: lockdown [toggle|unlock|lock|status]" >&2
+  exit 1
+  ;;
+esac
